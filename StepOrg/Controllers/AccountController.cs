@@ -72,7 +72,7 @@ namespace StepOrg.Controllers
         }
 
         [HttpPost("register")]
-        public async Task<ActionResult<UserDto>> Register(RegisterDto registerDto)
+        public async Task<ActionResult> Register([FromBody]RegisterDto registerDto)
         {
             if (CheckEmailExistsAsync(registerDto.Email).Result.Value)
             {
@@ -97,21 +97,16 @@ namespace StepOrg.Controllers
                 return ValidationProblem();
             }
 
-            //User userReturn = await _userManager.FindByEmailAsync(registerDto.Email);
-            //if (userReturn != null)
-            //{
-            //    var token = _userManager.GenerateEmailConfirmationTokenAsync(userReturn);
-            //    var confirmationLink = Url.Action("ConfirmEmail", "Account",
-            //        new { userId = userReturn.Id, token = token.Result }, Request.Scheme);
-            //    await _emailService.SendEmail(user.Email, confirmationLink);
-            //}
-
-            return new UserDto
+            User userReturn = await _userManager.FindByEmailAsync(registerDto.Email);
+            if (userReturn != null)
             {
-                DisplayName = user.UserName,
-                Token = await _tokenService.GenerateToken(user),
-                Email = user.Email
-            };
+                var token = _userManager.GenerateEmailConfirmationTokenAsync(userReturn);
+                var confirmationLink = Url.Action("ConfirmEmail", "Account",
+                    new { userId = userReturn.Id, token = token.Result }, Request.Scheme);
+                await _emailService.SendEmail(user.Email, confirmationLink);
+            }
+
+            return Ok();
         }
         [HttpGet("ConfirmEmail")]
         public async Task<ActionResult> ConfirmEmail(string userId, string token)
