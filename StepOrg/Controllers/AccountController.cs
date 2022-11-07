@@ -97,14 +97,14 @@ namespace StepOrg.Controllers
                 return ValidationProblem();
             }
 
-            User userReturn = await _userManager.FindByEmailAsync(registerDto.Email);
-            if (userReturn != null)
-            {
-                var token = _userManager.GenerateEmailConfirmationTokenAsync(userReturn);
-                var confirmationLink = Url.Action("ConfirmEmail", "Account",
-                    new { userId = userReturn.Id, token = token.Result }, Request.Scheme);
-                await _emailService.SendEmail(user.Email, confirmationLink);
-            }
+            //User userReturn = await _userManager.FindByEmailAsync(registerDto.Email);
+            //if (userReturn != null)
+            //{
+            //    var token = _userManager.GenerateEmailConfirmationTokenAsync(userReturn);
+            //    var confirmationLink = Url.Action("ConfirmEmail", "Account",
+            //        new { userId = userReturn.Id, token = token.Result }, Request.Scheme);
+            //    await _emailService.SendEmail(user.Email, confirmationLink);
+            //}
 
             return new UserDto
             {
