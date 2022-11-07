@@ -11,7 +11,7 @@ namespace StepOrg.Helpers
             var group = await _data.Groups.Include(c => c.UsersInGroup).FirstOrDefaultAsync(x => x.Id == Convert.ToInt64(groupId));
             if (group != null)
             {
-                int index = group.UsersInGroup.FindIndex(x => x.UserId == user.Id);
+                int index = group.UsersInGroup.FindIndex(x => x.UserId == user.Id.ToString());
                 if (index != -1)
                 {
                     return true;

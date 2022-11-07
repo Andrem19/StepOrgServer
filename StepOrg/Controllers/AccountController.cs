@@ -71,13 +71,9 @@ namespace StepOrg.Controllers
             };
         }
 
-        [HttpGet("register")]
-        public async Task<ActionResult> Register([FromQuery]string displayName, string email, string password)
+        [HttpPost("register")]
+        public async Task<ActionResult> Register(RegisterDto registerDto)
         {
-            var registerDto = new RegisterDto();
-            registerDto.DisplayName = displayName;
-            registerDto.Email = email;
-            registerDto.Password = password;
             if (CheckEmailExistsAsync(registerDto.Email).Result.Value)
             {
                 return new BadRequestObjectResult(new ApiValidationErrorResponse { Errors = new[] { "Email address is in use" } });
@@ -136,7 +132,7 @@ namespace StepOrg.Controllers
                 var group = await _context.Groups.Include(c => c.UsersInGroup).FirstOrDefaultAsync(x => x.Id == Convert.ToInt64(groupId));
                 if (group != null)
                 {
-                    var userInGroup = group.UsersInGroup.FirstOrDefault(x => x.UserId == user.Id);
+                    var userInGroup = group.UsersInGroup.FirstOrDefault(x => x.UserId == user.Id.ToString());
                     if (userInGroup != null)
                     {
                         var imageResult = await _imageService.AddImageAsync(avatar.File);
@@ -164,7 +160,7 @@ namespace StepOrg.Controllers
             var group = await _context.Groups.Include(c => c.UsersInGroup).FirstOrDefaultAsync(x => x.Id == Convert.ToInt64(groupId));
             if (group != null)
             {
-                var userInGroup = group.UsersInGroup.FirstOrDefault(x => x.UserId == user.Id);
+                var userInGroup = group.UsersInGroup.FirstOrDefault(x => x.UserId == user.Id.ToString());
                 if (userInGroup != null)
                 {
                     if (userInGroup.AvatarUrl != null)
