@@ -87,6 +87,7 @@ namespace StepOrg.Controllers
             };
 
             var result = await _userManager.CreateAsync(user, registerDto.Password);
+            await _userManager.AddToRoleAsync(user, "Member");
 
             if (!result.Succeeded)
             {
