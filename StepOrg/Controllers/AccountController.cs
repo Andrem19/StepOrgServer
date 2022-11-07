@@ -71,9 +71,13 @@ namespace StepOrg.Controllers
             };
         }
 
-        [HttpPost("register")]
-        public async Task<ActionResult> Register([FromBody]RegisterDto registerDto)
+        [HttpGet("register")]
+        public async Task<ActionResult> Register([FromQuery]string displayName, string email, string password)
         {
+            var registerDto = new RegisterDto();
+            registerDto.DisplayName = displayName;
+            registerDto.Email = email;
+            registerDto.Password = password;
             if (CheckEmailExistsAsync(registerDto.Email).Result.Value)
             {
                 return new BadRequestObjectResult(new ApiValidationErrorResponse { Errors = new[] { "Email address is in use" } });
