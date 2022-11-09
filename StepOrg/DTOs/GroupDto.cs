@@ -3,6 +3,7 @@
     public class GroupDto
     {
         public int Id { get; set; }
+        public string ShortName { get; set; }
         public string GroupName { get; set; }
         public string? PictureUrl { get; set; }
         public List<UserInGroupDto> Users { get; set; }
