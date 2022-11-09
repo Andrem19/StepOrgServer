@@ -40,6 +40,21 @@ namespace StepOrg.Controllers
             }
             return Ok(_mapper.Map<List<GroupDto>>(groupToReturn));
         }
+
+        [Authorize]
+        [HttpGet("getbyid")]
+        public async Task<ActionResult<GroupDto>> GetGroupById([FromQuery]int Id)
+        {
+            var user = await _userManager.FindByEmailFromClaimsPrinciple(HttpContext.User);
+
+            var groups = await _context.Groups.Include(c => c.UsersInGroup).Include(t => t.Ads).ToListAsync();
+
+            var res = groups.Where(x => x.UsersInGroup.Exists(p => p.UserId == user.Id.ToString()));
+            Group groupToReturn = res.FirstOrDefault(x => x.Id == Id);
+
+            return Ok(_mapper.Map<GroupDto>(groupToReturn));
+        }
+
         [Authorize]
         [HttpGet("payloads")]
         public async Task<ActionResult<List<GroupDto>>> GetMyGroupsWithPayload()
@@ -212,6 +227,7 @@ namespace StepOrg.Controllers
             }
             return Ok();
         }
+
         [Authorize]
         [HttpGet("leaveGroup")]
         public async Task<ActionResult> LeaveGroup([FromQuery] int GroupId)
