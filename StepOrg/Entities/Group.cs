@@ -8,6 +8,7 @@ namespace StepOrg.Entities
     {
         [Key]
         public int Id { get; set; }
+        public string ShortName { get; set; }
         public string GroupName { get; set; }
         public string? PictureUrl { get; set; }
         public string? PicturePublicId { get; set; }

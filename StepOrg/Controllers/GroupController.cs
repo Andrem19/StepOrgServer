@@ -73,9 +73,10 @@ namespace StepOrg.Controllers
         }
         [Authorize]
         [HttpGet("create")]
-        public async Task<ActionResult<GroupDto>> CreateGroup([FromQuery] string Name)
+        public async Task<ActionResult<GroupDto>> CreateGroup([FromQuery]string ShortName, [FromQuery]string Name)
         {
             Group group = new Group();
+            group.ShortName = ShortName;
             group.GroupName = Name;
             var user = await _userManager.FindByEmailFromClaimsPrinciple(HttpContext.User);
             UserInGroup newuser = new();
@@ -90,7 +91,7 @@ namespace StepOrg.Controllers
         }
         [Authorize]
         [HttpGet("changeName")]
-        public async Task<ActionResult> ChangeName([FromQuery] string Name, [FromQuery] string groupId)
+        public async Task<ActionResult> ChangeName([FromQuery] string ShortName, [FromQuery] string Name, [FromQuery] string groupId)
         {
             var user = await _userManager.FindByEmailFromClaimsPrinciple(HttpContext.User);
             var group = _context.Groups.Include(x => x.UsersInGroup).FirstOrDefault(x => x.Id == Convert.ToInt32(groupId));
@@ -99,6 +100,7 @@ namespace StepOrg.Controllers
             if (CreaterWhoRequest == null)
                 return BadRequest();
 
+            group.ShortName = ShortName;
             group.GroupName = Name;
             await _context.SaveChangesAsync();
 
