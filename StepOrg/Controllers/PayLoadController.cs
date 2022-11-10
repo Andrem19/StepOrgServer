@@ -31,15 +31,14 @@ namespace StepOrg.Controllers
             var group = _context.Groups.Include(a => a.UsersInGroup).Include(x => x.Payloads).ThenInclude(p => p.Tasks).FirstOrDefault(x => x.Id == GroupId);
             var UserGroup = group.UsersInGroup.FirstOrDefault(x => x.UserId == user.Id.ToString());
             Payload newPayload = new();
-            if (UserGroup != null)
-            {
-                if (UserGroup.Role == ROLE.CREATOR || UserGroup.Role == ROLE.MODERATOR)
-                {
-                    newPayload.Name = Name;
-                    group.Payloads.Add(newPayload);
-                    await _context.SaveChangesAsync();
-                }
-            }
+            if (!user.IsExistInGroup(group))
+                return BadRequest("User not exist in group");
+            if (user.IsNotCreatorOrModerator(group))
+                return BadRequest("User need to be creator or moderator for this action");
+                newPayload.Name = Name;
+                group.Payloads.Add(newPayload);
+                await _context.SaveChangesAsync();
+
             return Ok(newPayload.Id.ToString());
         }
         [Authorize]
@@ -48,9 +47,10 @@ namespace StepOrg.Controllers
         {
             var user = await _userManager.FindByEmailFromClaimsPrinciple(HttpContext.User);
             var group = _context.Groups.Include(z => z.UsersInGroup).Include(x => x.Payloads).ThenInclude(w => w.Tasks).FirstOrDefault(x => x.Id == GroupId);
-            var UserGroup = group?.UsersInGroup.FirstOrDefault(x => x.UserId == user.Id.ToString());
-            if (UserGroup == null)
-                return BadRequest();
+
+            if (!user.IsExistInGroup(group))
+                return BadRequest("User not exist in group");
+
             if (group.Payloads.Count > 0)
             {
                 return Ok(_mapper.Map<List<PayloadDto>>(group.Payloads));
@@ -63,9 +63,8 @@ namespace StepOrg.Controllers
         {
             var user = await _userManager.FindByEmailFromClaimsPrinciple(HttpContext.User);
             var group = _context.Groups.Include(z => z.UsersInGroup).Include(x => x.Payloads).ThenInclude(c => c.Tasks).FirstOrDefault(x => x.Id == GroupId);
-            var UserGroup = group?.UsersInGroup.FirstOrDefault(x => x.UserId.ToString() == user.Id.ToString());
-            if (UserGroup == null)
-                return BadRequest();
+            if (!user.IsExistInGroup(group))
+                return BadRequest("User not exist in group");
             var payload = group?.Payloads.FirstOrDefault(x => x.Id == PayloadId);
             if (payload == null) return BadRequest();
 
@@ -77,9 +76,8 @@ namespace StepOrg.Controllers
         {
             var user = await _userManager.FindByEmailFromClaimsPrinciple(HttpContext.User);
             var group = _context.Groups.Include(z => z.UsersInGroup).Include(x => x.Payloads).ThenInclude(c => c.Tasks).FirstOrDefault(x => x.Id == checkedChange.GroupId);
-            var UserGroup = group?.UsersInGroup.FirstOrDefault(x => x.UserId == user.Id.ToString());
-            if (UserGroup == null)
-                return BadRequest();
+            if (!user.IsExistInGroup(group))
+                return BadRequest("User not exist in group");
             var payload = group?.Payloads.FirstOrDefault(x => x.Id == checkedChange.PayloadId);
             if (payload == null) return BadRequest();
             var task = payload.Tasks.FirstOrDefault(x => x.Id == checkedChange.TaskId);
@@ -99,21 +97,20 @@ namespace StepOrg.Controllers
             var UserGroup = group.UsersInGroup.FirstOrDefault(x => x.UserId == user.Id.ToString());
             var payload = group.Payloads.FirstOrDefault(x => x.Id == TaskItem.PayloadId);
             TaskItem newTask = new();
-            if (UserGroup != null)
+            if (!user.IsExistInGroup(group))
+                return BadRequest("User not exist in group");
+            if (user.IsNotCreatorOrModerator(group))
+                return BadRequest("User need to be creator or moderator for this action");
+            if (payload != null)
             {
-                if (UserGroup.Role == ROLE.CREATOR || UserGroup.Role == ROLE.MODERATOR)
-                {
-                    if (payload != null)
-                    {
-                        newTask.Title = TaskItem.Title;
-                        newTask.Description = TaskItem.Description;
-                        newTask.Type = TaskItem.Type;
-                        newTask.Complete = false;
-                        payload.Tasks.Add(newTask);
-                        await _context.SaveChangesAsync();
-                    }
-                }
+                newTask.Title = TaskItem.Title;
+                newTask.Description = TaskItem.Description;
+                newTask.Type = TaskItem.Type;
+                newTask.Complete = false;
+                payload.Tasks.Add(newTask);
+                await _context.SaveChangesAsync();
             }
+
             return Ok();
         }
 
@@ -127,7 +124,7 @@ namespace StepOrg.Controllers
             if (group == null) return BadRequest();
 
             var UserInGroup = group.UsersInGroup.FirstOrDefault(x => x.Id == user.Id);
-            if (UserInGroup == null) return BadRequest();
+            if (!user.IsExistInGroup(group)) return BadRequest("User not exist in group");
 
             var payload = group.Payloads.FirstOrDefault(x => x.Id == TaskItem.PayloadId);
             if (payload == null) return BadRequest();
@@ -135,14 +132,15 @@ namespace StepOrg.Controllers
             var Task = payload.Tasks.FirstOrDefault(x => x.Id == TaskItem.Id);
             if (Task == null) return BadRequest();
 
-            if (UserInGroup.Role == ROLE.CREATOR || UserInGroup.Role == ROLE.MODERATOR)
-            {
-                Task.Title = TaskItem.Title;
-                Task.NameWhoCompletLast = user.UserName;
-                Task.Description = TaskItem.Description;
-                Task.Type = TaskItem.Type;
-                Task.Complete = TaskItem.Complete;
-            }
+            if (user.IsNotCreatorOrModerator(group))
+                return BadRequest("User need to be creator or moderator for this action");
+
+            Task.Title = TaskItem.Title;
+            Task.NameWhoCompletLast = user.UserName;
+            Task.Description = TaskItem.Description;
+            Task.Type = TaskItem.Type;
+            Task.Complete = TaskItem.Complete;
+
             Task.Complete = TaskItem.Complete;
             await _context.SaveChangesAsync();
             return Ok(_mapper.Map<PayloadDto>(payload));
@@ -159,10 +157,8 @@ namespace StepOrg.Controllers
 
             var user = await _userManager.FindByEmailFromClaimsPrinciple(HttpContext.User);
 
-            var Creators = group.UsersInGroup.Where(x => x.Role == ROLE.CREATOR).ToList();
-            var CreaterWhoRequest = Creators.FirstOrDefault(x => x.UserId == user.Id.ToString());
-            if (CreaterWhoRequest == null)
-                return BadRequest();
+            if (user.IsNotCreator(group))
+                return BadRequest("User need to be creator for this action");
 
             group.Payloads.Remove(payload);
             await _context.SaveChangesAsync();
@@ -181,10 +177,8 @@ namespace StepOrg.Controllers
 
             var user = await _userManager.FindByEmailFromClaimsPrinciple(HttpContext.User);
 
-            var Creators = group.UsersInGroup.Where(x => x.Role == ROLE.CREATOR || x.Role == ROLE.MODERATOR).ToList();
-            var CreaterWhoRequest = Creators.FirstOrDefault(x => x.UserId == user.Id.ToString());
-            if (CreaterWhoRequest == null)
-                return BadRequest();
+            if (user.IsNotCreator(group))
+                return BadRequest("User need to be creator for this action");
 
             for (int i = 0; i < payload.Tasks.Count; i++)
             {
@@ -213,11 +207,12 @@ namespace StepOrg.Controllers
             var userGroup = group.UsersInGroup.FirstOrDefault(x => x.UserId == user.Id.ToString());
             if (userGroup == null) return BadRequest();
 
-            if (userGroup.Role == ROLE.CREATOR || userGroup.Role == ROLE.MODERATOR)
-            {
-                payload.Tasks.Remove(Task);
-                await _context.SaveChangesAsync();
-            }
+            if (user.IsNotCreatorOrModerator(group))
+                return BadRequest("User need to be creator or moderator for this action");
+
+            payload.Tasks.Remove(Task);
+            await _context.SaveChangesAsync();
+
             return Ok();
         }
     }

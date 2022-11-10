@@ -162,13 +162,13 @@ namespace StepOrg.Controllers
             if (group != null)
             {
                 var userInGroup = group.UsersInGroup.FirstOrDefault(x => x.UserId == user.Id.ToString());
-                if (userInGroup != null)
+                if (!user.IsExistInGroup(group)) return BadRequest("User not exist in group");
+
+                if (userInGroup.AvatarUrl != null)
                 {
-                    if (userInGroup.AvatarUrl != null)
-                    {
-                        return Ok(userInGroup.AvatarUrl);
-                    }
+                    return Ok(userInGroup.AvatarUrl);
                 }
+
             }
             return Ok();
         }

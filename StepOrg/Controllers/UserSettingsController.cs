@@ -47,7 +47,7 @@ namespace StepOrg.Controllers
 
             var Creators = group.UsersInGroup.Where(x => x.Role == ROLE.CREATOR).ToList();
             var CreaterWhoRequest = Creators.FirstOrDefault(x => x.UserId == user.Id.ToString());
-            if (CreaterWhoRequest == null)
+            if (user.IsNotCreator(group) || user.LastCreatorWantToRemoveHisself(group, userId))
                 return BadRequest();
 
             var userInGroup = group.UsersInGroup.FirstOrDefault(x => x.UserId == userId);
@@ -68,25 +68,25 @@ namespace StepOrg.Controllers
 
             var user = await _userManager.FindByEmailFromClaimsPrinciple(HttpContext.User);
             if (user == null) return BadRequest();
-            if (group.UsersInGroup.Exists(x => x.UserId == user.Id.ToString() && x.Role == ROLE.CREATOR))
+
+            if (!user.IsExistInGroup(group) || user.IsNotCreator(group))
+                return BadRequest();
+            if (group.UsersInGroup.Count == users.Count)
             {
-                if (group.UsersInGroup.Count == users.Count)
+                for (int i = 0; i < group.UsersInGroup.Count; i++)
                 {
-                    for (int i = 0; i < group.UsersInGroup.Count; i++)
+                    for (int t = 0; t < users.Count; t++)
                     {
-                        for (int t = 0; t < users.Count; t++)
+                        if (group.UsersInGroup[i].UserId == users[t].UserId)
                         {
-                            if (group.UsersInGroup[i].UserId == users[t].UserId)
-                            {
-                                group.UsersInGroup[i].Percent = users[t].Percent;
-                            }
+                            group.UsersInGroup[i].Percent = users[t].Percent;
                         }
                     }
-                    await _context.SaveChangesAsync();
                 }
-                else return BadRequest();
+                await _context.SaveChangesAsync();
             }
-            else return BadRequest();
+            else return BadRequest("group.UsersInGroup.Count don't equal to users.Count[input parameter]");
+
 
             return Ok(_mapper.Map<List<UserInGroup>>(group.UsersInGroup));
         }

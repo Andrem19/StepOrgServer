@@ -47,12 +47,14 @@ namespace StepOrg.Controllers
         {
             var user = await _userManager.FindByEmailFromClaimsPrinciple(HttpContext.User);
 
-            var groups = await _context.Groups.Include(c => c.UsersInGroup).Include(t => t.Ads).ToListAsync();
-
-            var res = groups.Where(x => x.UsersInGroup.Exists(p => p.UserId == user.Id.ToString()));
-            Group groupToReturn = res.FirstOrDefault(x => x.Id == Id);
-
-            return Ok(_mapper.Map<GroupDto>(groupToReturn));
+            var group = await _context.Groups.Include(c => c.UsersInGroup).Include(t => t.Ads).Include(u => u.Payloads).FirstOrDefaultAsync(x => x.Id == Id);
+            var thisGroupInUser = user.UserGroups.FirstOrDefault(x => x.Id == Id);
+            if (group.PictureUrl != thisGroupInUser.PictureUrl)
+            {
+                thisGroupInUser.PictureUrl = group.PictureUrl;
+                _userManager.UpdateAsync(user);
+            }
+            return Ok(_mapper.Map<GroupDto>(group));
         }
 
         [Authorize]
@@ -94,14 +96,22 @@ namespace StepOrg.Controllers
             group.ShortName = ShortName;
             group.GroupName = Name;
             var user = await _userManager.FindByEmailFromClaimsPrinciple(HttpContext.User);
+            UserGroups userGroups = new();
+            
             UserInGroup newuser = new();
             newuser.UserId = user.Id.ToString();
             newuser.Name = user.NormalizedUserName;
             newuser.Role = ROLE.CREATOR;
             group.UsersInGroup.Add(newuser);
+
             _context.Groups.Add(group);
             await _context.SaveChangesAsync();
 
+            userGroups.Id = group.Id;
+            userGroups.Name = group.ShortName;
+            userGroups.PictureUrl = group.PictureUrl;
+            user.UserGroups.Add(userGroups);
+            await _userManager.UpdateAsync(user);
             return Ok(_mapper.Map<GroupDto>(group));
         }
         [Authorize]
@@ -110,14 +120,20 @@ namespace StepOrg.Controllers
         {
             var user = await _userManager.FindByEmailFromClaimsPrinciple(HttpContext.User);
             var group = _context.Groups.Include(x => x.UsersInGroup).FirstOrDefault(x => x.Id == Convert.ToInt32(groupId));
-            var Creators = group.UsersInGroup.Where(x => x.Role == ROLE.CREATOR).ToList();
-            var CreaterWhoRequest = Creators.FirstOrDefault(x => x.UserId == user.Id.ToString());
-            if (CreaterWhoRequest == null)
+
+            if (user.IsNotCreator(group))
                 return BadRequest();
 
             group.ShortName = ShortName;
             group.GroupName = Name;
             await _context.SaveChangesAsync();
+
+            var userGroup = user.UserGroups.FirstOrDefault(x => x.Id == group.Id);
+            if (userGroup.Name != group.ShortName)
+            {
+                userGroup.Name = group.ShortName;
+                await _userManager.UpdateAsync(user);
+            }
 
             return Ok();
         }
@@ -131,16 +147,22 @@ namespace StepOrg.Controllers
             var user = await _userManager.FindByEmailFromClaimsPrinciple(HttpContext.User);
 
             var Creator = group.UsersInGroup.FirstOrDefault(x => x.Role == ROLE.CREATOR);
-            if (Creator == null)
+            if (user.IsNotCreator(group))
                 return BadRequest();
-            if (Creator.UserId == user.Id.ToString())
+            
+            if (!string.IsNullOrEmpty(group.PicturePublicId))
             {
-                if (!string.IsNullOrEmpty(group.PicturePublicId))
-                {
-                    await _imageService.DeleteImageAsync(group.PicturePublicId);
-                }
-                _context.Groups.Remove(group);
-                await _context.SaveChangesAsync();
+                await _imageService.DeleteImageAsync(group.PicturePublicId);
+            }
+            _context.Groups.Remove(group);
+            await _context.SaveChangesAsync();
+
+            for (int i = 0; i < group.UsersInGroup.Count; i++)
+            {
+                var userFromGroup = await _userManager.FindByIdAsync(group.UsersInGroup[i].Id.ToString());
+                int indexOfGroup = userFromGroup.UserGroups.FindIndex(x => x.Id == group.Id);
+                userFromGroup.UserGroups.RemoveAt(indexOfGroup);
+                await _userManager.UpdateAsync(userFromGroup);
             }
             return Ok();
         }
@@ -153,14 +175,8 @@ namespace StepOrg.Controllers
 
             var user = await _userManager.FindByEmailFromClaimsPrinciple(HttpContext.User);
 
-            var Creators = group.UsersInGroup.Where(x => x.Role == ROLE.CREATOR).ToList();
-            var CreaterWhoRequest = Creators.FirstOrDefault(x => x.UserId == user.Id.ToString());
-            if (CreaterWhoRequest == null)
-            {
-                return BadRequest();
-            }
 
-            if (Creators.Count == 1 && SetRole.UserId == CreaterWhoRequest.UserId)
+            if (user.IsNotCreator(group) || user.LastCreatorWantToRemoveHisself(group, SetRole.UserId))
             {
                 return BadRequest();
             }
@@ -180,12 +196,11 @@ namespace StepOrg.Controllers
             if (group == null)
                 return BadRequest();
             var user = await _userManager.FindByEmailFromClaimsPrinciple(HttpContext.User);
-            var userToAdd = _userManager.Users.FirstOrDefault(x => x.InviteCode == InviteCode);
-            var Creators = group.UsersInGroup.Where(x => x.Role == ROLE.CREATOR).ToList();
-            var CreaterWhoRequest = Creators.FirstOrDefault(x => x.UserId == user.Id.ToString());
-            if (CreaterWhoRequest == null)
+            
+            if (user.IsNotCreator(group))
                 return BadRequest();
 
+            var userToAdd = _userManager.Users.FirstOrDefault(x => x.InviteCode == InviteCode);
             UserInGroup newuser = new();
             newuser.UserId = userToAdd.Id.ToString();
             newuser.Name = userToAdd.UserName;
@@ -195,35 +210,41 @@ namespace StepOrg.Controllers
 
             await _context.SaveChangesAsync();
 
+            UserGroups userGroup = new();
+            userGroup.Id = group.Id;
+            userGroup.Name = group.ShortName;
+            userGroup.PictureUrl = group.PictureUrl;
+            user.UserGroups.Add(userGroup);
+            await _userManager.UpdateAsync(user);
+
             return group;
         }
         [Authorize]
         [HttpPost("Avatar")]
-        public async Task<ActionResult> DownloadGroupPicture([FromForm] AvatarDto avatar, [FromQuery] string groupId)
+        public async Task<ActionResult> UploadGroupPicture([FromForm]AvatarDto avatar, [FromQuery] string groupId)
         {
             if (avatar.File != null)
             {
                 var user = await _userManager.FindByEmailFromClaimsPrinciple(HttpContext.User);
                 var group = await _context.Groups.Include(c => c.UsersInGroup).FirstOrDefaultAsync(x => x.Id == Convert.ToInt64(groupId));
-                if (group != null)
+                if (group == null)
+                    return BadRequest();
+
+                var userInGroup = group.UsersInGroup.FirstOrDefault(x => x.UserId == user.Id.ToString());
+                if (user.IsNotCreator(group))
+                    return BadRequest();
+                var imageResult = await _imageService.AddImageAsync(avatar.File);
+                if (group.PicturePublicId != null)
                 {
-                    var userInGroup = group.UsersInGroup.FirstOrDefault(x => x.UserId == user.Id.ToString());
-                    if (userInGroup?.Role == 0)
-                    {
-                        var imageResult = await _imageService.AddImageAsync(avatar.File);
-                        if (group.PicturePublicId != null)
-                        {
-                            await _imageService.DeleteImageAsync(group.PicturePublicId);
-                        }
-                        group.PictureUrl = imageResult.SecureUrl.ToString();
-                        group.PicturePublicId = imageResult.PublicId;
-                        var result = await _context.SaveChangesAsync() > 0;
-
-                        if (result) return Ok(userInGroup.AvatarUrl);
-
-                        return BadRequest("Problem updating the group");
-                    }
+                    await _imageService.DeleteImageAsync(group.PicturePublicId);
                 }
+                group.PictureUrl = imageResult.SecureUrl.ToString();
+                group.PicturePublicId = imageResult.PublicId;
+                var result = await _context.SaveChangesAsync() > 0;
+
+                if (result) return Ok(userInGroup.AvatarUrl);
+
+                return BadRequest("Problem updating the group");
             }
             return Ok();
         }
@@ -237,16 +258,13 @@ namespace StepOrg.Controllers
                 return BadRequest();
             var user = await _userManager.FindByEmailFromClaimsPrinciple(HttpContext.User);
 
-            var Creators = group.UsersInGroup.Where(x => x.Role == ROLE.CREATOR).ToList();
-            var CreaterWhoRequest = Creators.FirstOrDefault(x => x.UserId == user.Id.ToString());
-            if (CreaterWhoRequest == null)
+            if (user.LastCreatorWantToLeaveGroup(group))
+                return BadRequest("Last Creator Can't leave group");
+            var userToRemove = group.UsersInGroup.FirstOrDefault(x => x.UserId == user.Id.ToString());
+            if (userToRemove != null)
             {
-                var userToRemove = group.UsersInGroup.FirstOrDefault(x => x.UserId == user.Id.ToString());
-                if (userToRemove != null)
-                {
-                    group.UsersInGroup.Remove(userToRemove);
-                    await _context.SaveChangesAsync();
-                }
+                group.UsersInGroup.Remove(userToRemove);
+                await _context.SaveChangesAsync();
             }
             return Ok();
         }
