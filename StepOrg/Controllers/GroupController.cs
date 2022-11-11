@@ -146,7 +146,6 @@ namespace StepOrg.Controllers
 
             var user = await _userManager.FindByEmailFromClaimsPrinciple(HttpContext.User);
 
-            var Creator = group.UsersInGroup.FirstOrDefault(x => x.Role == ROLE.CREATOR);
             if (user.IsNotCreator(group))
                 return BadRequest();
             

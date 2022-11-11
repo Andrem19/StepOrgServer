@@ -64,6 +64,7 @@ namespace StepOrg.Controllers
 
             return new UserDto
             {
+                Id = user.Id,
                 Email = user.Email,
                 Token = await _tokenService.GenerateToken(user),
                 DisplayName = user.UserName,
