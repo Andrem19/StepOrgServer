@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using StepOrg.Entities;
 using StepOrg.Entities.ModulesStruct.Ads;
+using System.Net;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using Group = StepOrg.Entities.Group;
@@ -44,12 +45,17 @@ namespace StepOrg.Data
                 }
             }
 
-
             modelBuilder.Entity<Ad>()
                 .HasOne(a => a.Voting)
                 .WithOne()
                 .HasForeignKey<Voting>(a => a.Id)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            //modelBuilder.Entity<User>()
+            //    .HasOne(a => a.UserGroups)
+            //    .WithOne()
+            //    .HasForeignKey<UserGroups>(a => a.Id)
+            //    .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<Role>()
                 .HasData(

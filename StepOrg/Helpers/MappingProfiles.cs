@@ -16,6 +16,7 @@ namespace StepOrg.Helpers
                 .ForMember(d => d.Role, o => o.MapFrom(s => s.Role.ToString()));
             CreateMap<Payload, PayloadDto>();
             CreateMap<TaskItem, TaskItemDto>();
+            CreateMap<UserGroups, UserGroupDTO>();
             CreateMap<Ad, AdDto>();
             CreateMap<Voting, VotingDto>();
             CreateMap<Variant, VariantDto>();

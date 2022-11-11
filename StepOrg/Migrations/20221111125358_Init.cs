@@ -59,6 +59,7 @@ namespace StepOrg.Migrations
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    ShortName = table.Column<string>(type: "text", nullable: false),
                     GroupName = table.Column<string>(type: "text", nullable: false),
                     PictureUrl = table.Column<string>(type: "text", nullable: true),
                     PicturePublicId = table.Column<string>(type: "text", nullable: true),
@@ -170,6 +171,27 @@ namespace StepOrg.Migrations
                     table.PrimaryKey("PK_AspNetUserTokens", x => new { x.UserId, x.LoginProvider, x.Name });
                     table.ForeignKey(
                         name: "FK_AspNetUserTokens_AspNetUsers_UserId",
+                        column: x => x.UserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "UserGroups",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Name = table.Column<string>(type: "text", nullable: false),
+                    PictureUrl = table.Column<string>(type: "text", nullable: false),
+                    UserId = table.Column<int>(type: "integer", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_UserGroups", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_UserGroups_AspNetUsers_UserId",
                         column: x => x.UserId,
                         principalTable: "AspNetUsers",
                         principalColumn: "Id",
@@ -326,10 +348,10 @@ namespace StepOrg.Migrations
                 columns: new[] { "Id", "ConcurrencyStamp", "Name", "NormalizedName" },
                 values: new object[,]
                 {
-                    { 1, "3a5ca0c3-f94e-41ae-a7d0-7367ece4f409", "Member", "MEMBER" },
-                    { 2, "f4c44728-c8a4-4723-9bc3-f63d5e6e25ad", "Delivery", "DELIVERY" },
-                    { 3, "85679f6c-ae48-4774-b993-fd29b03bea4f", "Moderator", "MODERATOR" },
-                    { 4, "0e3d3420-dbd3-4fa9-bf4e-d4e26e887d2f", "Admin", "ADMIN" }
+                    { 1, "87288f8d-c383-4ebc-bc7b-5c40195ae861", "Member", "MEMBER" },
+                    { 2, "b604a890-810e-4523-8a39-be4e090220db", "Delivery", "DELIVERY" },
+                    { 3, "57bc19e1-88c5-4762-bda3-26a9481d8104", "Moderator", "MODERATOR" },
+                    { 4, "9a0854dc-9760-4a18-a513-1618505c3003", "Admin", "ADMIN" }
                 });
 
             migrationBuilder.CreateIndex(
@@ -385,6 +407,11 @@ namespace StepOrg.Migrations
                 column: "PayloadId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_UserGroups_UserId",
+                table: "UserGroups",
+                column: "UserId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_UserInGroup_GroupId",
                 table: "UserInGroup",
                 column: "GroupId");
@@ -421,6 +448,9 @@ namespace StepOrg.Migrations
                 name: "TaskItem");
 
             migrationBuilder.DropTable(
+                name: "UserGroups");
+
+            migrationBuilder.DropTable(
                 name: "UserInGroup");
 
             migrationBuilder.DropTable(
@@ -430,10 +460,10 @@ namespace StepOrg.Migrations
                 name: "AspNetRoles");
 
             migrationBuilder.DropTable(
-                name: "AspNetUsers");
+                name: "Payload");
 
             migrationBuilder.DropTable(
-                name: "Payload");
+                name: "AspNetUsers");
 
             migrationBuilder.DropTable(
                 name: "Voting");

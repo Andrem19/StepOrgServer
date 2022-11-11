@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -17,9 +18,10 @@ namespace StepOrg.Controllers
         private readonly TokenService _tokenService;
         private readonly ImageService _imageService;
         private readonly IConfiguration _config;
+        private readonly IMapper _mapper;
         private readonly EmailService _emailService;
         private readonly ApplicationDbContext _context;
-        public AccountController(ApplicationDbContext context, EmailService emailService, UserManager<User> userManager, TokenService tokenService, IConfiguration config, ImageService imageService)
+        public AccountController(ApplicationDbContext context, EmailService emailService, UserManager<User> userManager, TokenService tokenService, IConfiguration config, ImageService imageService, IMapper mapper)
         {
             _userManager = userManager;
             _tokenService = tokenService;
@@ -27,6 +29,7 @@ namespace StepOrg.Controllers
             _emailService = emailService;
             _imageService = imageService;
             _context = context;
+            _mapper = mapper;
         }
         [Authorize]
         [HttpGet]
@@ -36,10 +39,12 @@ namespace StepOrg.Controllers
 
             return new UserDto
             {
+                Id = user.Id,
                 Email = user.Email,
                 Token = await _tokenService.GenerateToken(user),
                 DisplayName = user.UserName,
-                InviteCode = user.InviteCode
+                InviteCode = user.InviteCode,
+                UserGroup = _mapper.Map<List<UserGroupDTO>>(user.UserGroups)
             };
         }
 
@@ -68,7 +73,8 @@ namespace StepOrg.Controllers
                 Email = user.Email,
                 Token = await _tokenService.GenerateToken(user),
                 DisplayName = user.UserName,
-                InviteCode = user.InviteCode
+                InviteCode = user.InviteCode,
+                UserGroup = _mapper.Map<List<UserGroupDTO>>(user.UserGroups)
             };
         }
 

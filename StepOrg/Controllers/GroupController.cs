@@ -96,7 +96,7 @@ namespace StepOrg.Controllers
             group.ShortName = ShortName;
             group.GroupName = Name;
             var user = await _userManager.FindByEmailFromClaimsPrinciple(HttpContext.User);
-            UserGroups userGroups = new();
+            
             
             UserInGroup newuser = new();
             newuser.UserId = user.Id.ToString();
@@ -105,13 +105,18 @@ namespace StepOrg.Controllers
             group.UsersInGroup.Add(newuser);
 
             _context.Groups.Add(group);
-            await _context.SaveChangesAsync();
+            
 
+            UserGroups userGroups = new();
             userGroups.Id = group.Id;
             userGroups.Name = group.ShortName;
-            userGroups.PictureUrl = group.PictureUrl;
+            userGroups.PictureUrl = group.PictureUrl?? "";
+
             user.UserGroups.Add(userGroups);
+
+
             await _userManager.UpdateAsync(user);
+            await _context.SaveChangesAsync();
             return Ok(_mapper.Map<GroupDto>(group));
         }
         [Authorize]

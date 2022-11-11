@@ -345,28 +345,28 @@ namespace StepOrg.Migrations
                         new
                         {
                             Id = 1,
-                            ConcurrencyStamp = "407ba7f3-1d98-49e0-a58c-990a643315b7",
+                            ConcurrencyStamp = "87288f8d-c383-4ebc-bc7b-5c40195ae861",
                             Name = "Member",
                             NormalizedName = "MEMBER"
                         },
                         new
                         {
                             Id = 2,
-                            ConcurrencyStamp = "aa99d26d-882e-4be8-b46c-24ffe0989a05",
+                            ConcurrencyStamp = "b604a890-810e-4523-8a39-be4e090220db",
                             Name = "Delivery",
                             NormalizedName = "DELIVERY"
                         },
                         new
                         {
                             Id = 3,
-                            ConcurrencyStamp = "9ccbc1e6-ee7c-412f-912f-52223b3ef99a",
+                            ConcurrencyStamp = "57bc19e1-88c5-4762-bda3-26a9481d8104",
                             Name = "Moderator",
                             NormalizedName = "MODERATOR"
                         },
                         new
                         {
                             Id = 4,
-                            ConcurrencyStamp = "754133ef-77f9-47da-8e80-e728da8f2aa0",
+                            ConcurrencyStamp = "9a0854dc-9760-4a18-a513-1618505c3003",
                             Name = "Admin",
                             NormalizedName = "ADMIN"
                         });
@@ -459,7 +459,7 @@ namespace StepOrg.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<int?>("UserId")
+                    b.Property<int>("UserId")
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
@@ -621,9 +621,13 @@ namespace StepOrg.Migrations
 
             modelBuilder.Entity("StepOrg.Entities.UserGroups", b =>
                 {
-                    b.HasOne("StepOrg.Entities.User", null)
+                    b.HasOne("StepOrg.Entities.User", "User")
                         .WithMany("UserGroups")
-                        .HasForeignKey("UserId");
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("StepOrg.Entities.UserInGroup", b =>

@@ -13,7 +13,7 @@ using StepOrg.Data;
 namespace StepOrg.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20221107135918_Init")]
+    [Migration("20221111125358_Init")]
     partial class Init
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -150,6 +150,10 @@ namespace StepOrg.Migrations
                         .HasColumnType("text");
 
                     b.Property<string>("PictureUrl")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ShortName")
+                        .IsRequired()
                         .HasColumnType("text");
 
                     b.HasKey("Id");
@@ -343,28 +347,28 @@ namespace StepOrg.Migrations
                         new
                         {
                             Id = 1,
-                            ConcurrencyStamp = "3a5ca0c3-f94e-41ae-a7d0-7367ece4f409",
+                            ConcurrencyStamp = "87288f8d-c383-4ebc-bc7b-5c40195ae861",
                             Name = "Member",
                             NormalizedName = "MEMBER"
                         },
                         new
                         {
                             Id = 2,
-                            ConcurrencyStamp = "f4c44728-c8a4-4723-9bc3-f63d5e6e25ad",
+                            ConcurrencyStamp = "b604a890-810e-4523-8a39-be4e090220db",
                             Name = "Delivery",
                             NormalizedName = "DELIVERY"
                         },
                         new
                         {
                             Id = 3,
-                            ConcurrencyStamp = "85679f6c-ae48-4774-b993-fd29b03bea4f",
+                            ConcurrencyStamp = "57bc19e1-88c5-4762-bda3-26a9481d8104",
                             Name = "Moderator",
                             NormalizedName = "MODERATOR"
                         },
                         new
                         {
                             Id = 4,
-                            ConcurrencyStamp = "0e3d3420-dbd3-4fa9-bf4e-d4e26e887d2f",
+                            ConcurrencyStamp = "9a0854dc-9760-4a18-a513-1618505c3003",
                             Name = "Admin",
                             NormalizedName = "ADMIN"
                         });
@@ -439,6 +443,32 @@ namespace StepOrg.Migrations
                         .HasDatabaseName("UserNameIndex");
 
                     b.ToTable("AspNetUsers", (string)null);
+                });
+
+            modelBuilder.Entity("StepOrg.Entities.UserGroups", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("PictureUrl")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("UserGroups");
                 });
 
             modelBuilder.Entity("StepOrg.Entities.UserInGroup", b =>
@@ -591,6 +621,17 @@ namespace StepOrg.Migrations
                     b.Navigation("Payload");
                 });
 
+            modelBuilder.Entity("StepOrg.Entities.UserGroups", b =>
+                {
+                    b.HasOne("StepOrg.Entities.User", "User")
+                        .WithMany("UserGroups")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("StepOrg.Entities.UserInGroup", b =>
                 {
                     b.HasOne("StepOrg.Entities.Group", "Group")
@@ -624,6 +665,11 @@ namespace StepOrg.Migrations
             modelBuilder.Entity("StepOrg.Entities.ModulesStruct.Payloads.Payload", b =>
                 {
                     b.Navigation("Tasks");
+                });
+
+            modelBuilder.Entity("StepOrg.Entities.User", b =>
+                {
+                    b.Navigation("UserGroups");
                 });
 #pragma warning restore 612, 618
         }
