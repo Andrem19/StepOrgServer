@@ -108,7 +108,7 @@ namespace StepOrg.Controllers
             
 
             UserGroups userGroups = new();
-            userGroups.Id = group.Id;
+            userGroups.GroupId = group.Id;
             userGroups.Name = group.ShortName;
             userGroups.PictureUrl = group.PictureUrl?? "";
 
