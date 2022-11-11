@@ -48,11 +48,11 @@ namespace StepOrg.Controllers
             var user = await _userManager.FindByEmailFromClaimsPrinciple(HttpContext.User);
 
             var group = await _context.Groups.Include(c => c.UsersInGroup).Include(t => t.Ads).Include(u => u.Payloads).FirstOrDefaultAsync(x => x.Id == Id);
-            var thisGroupInUser = user.UserGroups.FirstOrDefault(x => x.Id == Id);
+            var thisGroupInUser = user.UserGroups.FirstOrDefault(x => x.UserId == Id);
             if (group.PictureUrl != thisGroupInUser.PictureUrl)
             {
                 thisGroupInUser.PictureUrl = group.PictureUrl;
-                _userManager.UpdateAsync(user);
+                await _userManager.UpdateAsync(user);
             }
             return Ok(_mapper.Map<GroupDto>(group));
         }
