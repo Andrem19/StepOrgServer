@@ -50,7 +50,7 @@ namespace StepOrg.Extensions
         }
         public static bool IsExistInGroup(this User user, Group group)
         {
-            return group.UsersInGroup.Exists(x => x.Id == user.Id);
+            return group.UsersInGroup.Exists(x => x.UserId == user.Id.ToString());
         }
     }
 }

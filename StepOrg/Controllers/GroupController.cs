@@ -48,7 +48,7 @@ namespace StepOrg.Controllers
             var user = await _userManager.FindByEmailWithGroupsAsync(HttpContext.User);
 
             var group = await _context.Groups.Include(c => c.UsersInGroup).Include(t => t.Ads).Include(u => u.Payloads).FirstOrDefaultAsync(x => x.Id == Id);
-            var thisGroupInUser = user.UserGroups.FirstOrDefault(x => x.UserId == Id);
+            var thisGroupInUser = user.UserGroups.FirstOrDefault(x => x.GroupId == Id);
             if (!user.IsExistInGroup(group))
                 return BadRequest();
             if (group.PictureUrl != thisGroupInUser.PictureUrl)
