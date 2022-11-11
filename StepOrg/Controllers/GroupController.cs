@@ -105,7 +105,7 @@ namespace StepOrg.Controllers
             group.UsersInGroup.Add(newuser);
 
             _context.Groups.Add(group);
-            
+            await _context.SaveChangesAsync();
 
             UserGroups userGroups = new();
             userGroups.GroupId = group.Id;
@@ -114,9 +114,8 @@ namespace StepOrg.Controllers
 
             user.UserGroups.Add(userGroups);
 
-
             await _userManager.UpdateAsync(user);
-            await _context.SaveChangesAsync();
+            
             return Ok(_mapper.Map<GroupDto>(group));
         }
         [Authorize]
