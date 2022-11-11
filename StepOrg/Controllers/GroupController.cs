@@ -97,7 +97,7 @@ namespace StepOrg.Controllers
             Group group = new Group();
             group.ShortName = ShortName;
             group.GroupName = Name;
-            var user = await _userManager.FindByEmailFromClaimsPrinciple(HttpContext.User);
+            var user = await _userManager.FindByEmailWithGroupsAsync(HttpContext.User);
             
             
             UserInGroup newuser = new();
