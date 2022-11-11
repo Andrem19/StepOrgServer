@@ -47,6 +47,13 @@ namespace StepOrg.Controllers
                 UserGroup = _mapper.Map<List<UserGroupDTO>>(user.UserGroups)
             };
         }
+        [Authorize]
+        [HttpGet("getMyGroup")]
+        public async Task<List<UserGroupDTO>> GetMyGroupList()
+        {
+            var user = await _userManager.FindByEmailWithGroupsAsync(HttpContext.User);
+            return _mapper.Map<List<UserGroupDTO>>(user.UserGroups);
+        }
 
         [HttpGet("emailexists")]
         public async Task<ActionResult<bool>> CheckEmailExistsAsync([FromQuery] string email)

@@ -13,5 +13,11 @@ namespace StepOrg.Extensions
 
             return await input.Users.SingleOrDefaultAsync(x => x.Email == email);
         }
+        public static async Task<User> FindByEmailWithGroupsAsync(this UserManager<User> input, ClaimsPrincipal user)
+        {
+            var email = user.FindFirstValue(ClaimTypes.Email);
+
+            return await input.Users.Include(x => x.UserGroups).SingleOrDefaultAsync(x => x.Email == email);
+        }
     }
 }
