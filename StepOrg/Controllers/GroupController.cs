@@ -45,10 +45,12 @@ namespace StepOrg.Controllers
         [HttpGet("getbyid")]
         public async Task<ActionResult<GroupDto>> GetGroupById([FromQuery]int Id)
         {
-            var user = await _userManager.FindByEmailFromClaimsPrinciple(HttpContext.User);
+            var user = await _userManager.FindByEmailWithGroupsAsync(HttpContext.User);
 
             var group = await _context.Groups.Include(c => c.UsersInGroup).Include(t => t.Ads).Include(u => u.Payloads).FirstOrDefaultAsync(x => x.Id == Id);
             var thisGroupInUser = user.UserGroups.FirstOrDefault(x => x.UserId == Id);
+            if (!user.IsExistInGroup(group))
+                return BadRequest();
             if (group.PictureUrl != thisGroupInUser.PictureUrl)
             {
                 thisGroupInUser.PictureUrl = group.PictureUrl;
